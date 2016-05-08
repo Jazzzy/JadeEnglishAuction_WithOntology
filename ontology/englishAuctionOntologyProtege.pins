@@ -1,0 +1,67 @@
+; Mon May 09 00:08:40 CEST 2016
+; 
+;+ (version "3.4.8")
+;+ (build "Build 629")
+
+([addresses] of  %3AJADE-SLOT
+
+	(%3AJADE-UNNAMED-SLOT FALSE))
+
+([AgentAction] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE TRUE))
+
+([AID] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE TRUE))
+
+([Book] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
+
+([Buy] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
+
+([Concept] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE TRUE))
+
+([name] of  %3AJADE-SLOT
+
+	(%3AJADE-UNNAMED-SLOT FALSE))
+
+([Offer] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
+
+([Predicate] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE TRUE))
+
+([project+annotation] of  %3APROJECT-ANNOTATION
+)
+
+([resolvers] of  %3AJADE-SLOT
+
+	(%3AJADE-UNNAMED-SLOT FALSE))
+
+([SimpleJADEAbstractOntology_00014] of  %3ASTANDARD-FACET
+
+	(%3AASSOCIATED-SLOT [%3AJADE-NAME]))
+
+([SimpleJADEAbstractOntology_00016] of  %3ASTANDARD-FACET
+
+	(%3AASSOCIATED-SLOT [%3AJADE-UNNAMED-SLOT]))
+
+([ToBid] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
+
+([ToInform] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
+
+([ToOffer] of  %3AJADE-CLASS
+
+	(%3AJADE-IGNORE FALSE))
