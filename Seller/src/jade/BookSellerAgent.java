@@ -29,6 +29,7 @@ import jade.content.lang.leap.LEAPCodec;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.Ontology;
 import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
@@ -43,7 +44,6 @@ import model.Auction;
 import model.Book;
 import model.Seller;
 import ontology.*;
-import ontology.impl.*;
 import viewController.BookSellerGUI;
 import viewController.Controller;
 
@@ -155,7 +155,7 @@ public class BookSellerAgent extends Agent {
 
 
                     getController().updateListOfAuctionsRemote();
-                    myAgent.addBehaviour(new Auctioning(myAgent, seller.getAuctionByTitle(book.getTitle())));
+                    myAgent.addBehaviour(new Auctioning(myAgent, seller.getCurrentAuctionByTitle(book.getTitle())));
 
 
                     ArrayList<AID> listOfBuyers = getAllBuyers();
@@ -165,17 +165,18 @@ public class BookSellerAgent extends Agent {
                     cfp.setLanguage(codec.getName());
                     cfp.setOntology(ontology.getName());
 
-                    ToOffer ontToOffer = new DefaultToOffer();
-                    Offer ontOffer = new DefaultOffer();
-                    ontology.Book ontBook = new DefaultBook();
+                    ToOffer ontToOffer = new ToOffer();
+                    Offer ontOffer = new Offer();
+                    ontology.Book ontBook = new ontology.Book();
                     ontBook.setTitle(book.getTitle());
                     ontOffer.setItem(ontBook);
-                    ontOffer.setPrice(seller.getAuctionByTitle(book.getTitle()).getCurrentPrice());
+                    ontOffer.setPrice(seller.getCurrentAuctionByTitle(book.getTitle()).getCurrentPrice());
                     ontToOffer.setAnOffer(ontOffer);
 
                     try {
-                        getContentManager().fillContent(cfp, ontToOffer);
-                        myAgent.send(cfp);
+                        Action action = new Action(myAgent.getAID(),ontToOffer);
+                        getContentManager().fillContent(cfp, action);
+                        //myAgent.send(cfp);
                     } catch (Codec.CodecException ce) {
                         ce.printStackTrace();
                     } catch (OntologyException oe) {
@@ -186,7 +187,7 @@ public class BookSellerAgent extends Agent {
                     //This should be an ontology now
                     //cfp.setContent(String.valueOf( seller.getAuctionByTitle(book.getTitle()).getCurrentPrice()));
 
-                    cfp.setConversationId(seller.getAuctionByTitle(book.getTitle()).getItem().getTitle());
+                    cfp.setConversationId(seller.getCurrentAuctionByTitle(book.getTitle()).getItem().getTitle());
 
                     for (AID aid : listOfBuyers) {
                         cfp.addReceiver(aid);
@@ -194,6 +195,9 @@ public class BookSellerAgent extends Agent {
                     myAgent.send(cfp);
                     controller.updateListOfAuctionsRemote();
 
+
+                }else{
+                    System.err.print("Error when adding auction");
 
                 }
 
@@ -239,18 +243,19 @@ public class BookSellerAgent extends Agent {
             informWin.setLanguage(codec.getName());
             informWin.setOntology(ontology.getName());
 
-            ToInform ontToInform = new DefaultToInform();
-            Buy ontBuy = new DefaultBuy();
-            ontology.Book ontBook = new DefaultBook();
+            ToInform ontToInform = new ToInform();
+            Buy ontBuy = new Buy();
+            ontology.Book ontBook = new ontology.Book();
 
             ontBook.setTitle(auction.getItem().getTitle());
             ontBuy.setItem(ontBook);
-            ontBuy.setPrice((auction.getCurrentPrice() - auction.getIncrement()));
+            ontBuy.setPrice((auction.getCurrentPrice()));
             ontToInform.setBill(ontBuy);
 
             try {
-                getContentManager().fillContent(informWin, ontToInform);
-                myAgent.send(informWin);
+                Action action = new Action(myAgent.getAID(),ontToInform);
+                getContentManager().fillContent(informWin, action);
+                //myAgent.send(informWin);
             } catch (Codec.CodecException ce) {
                 ce.printStackTrace();
             } catch (OntologyException oe) {
@@ -261,7 +266,7 @@ public class BookSellerAgent extends Agent {
             //informWin.setContent(String.valueOf(auction.getCurrentPrice() - auction.getIncrement()));
             myAgent.send(informWin);
 
-            this.auction.addToLog("On tick " + this.getTickCount() + " we have finished the auction with [" + this.winner.getLocalName() + "] as a winner and he paid " + (auction.getCurrentPrice() - auction.getIncrement()));
+            this.auction.addToLog("On tick " + this.getTickCount() + " we have finished the auction with [" + this.winner.getLocalName() + "] as a winner and he paid " + (auction.getCurrentPrice()));
             auction.endAuctionSuccess();
             getController().updateListOfBooksRemote();
             getController().updateListOfAuctionsRemote();
@@ -273,13 +278,14 @@ public class BookSellerAgent extends Agent {
 
         public void onTick() {
 
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPOSE).MatchConversationId(auction.getItem().getTitle());
+            MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),MessageTemplate.MatchConversationId(auction.getItem().getTitle()));
 
             ACLMessage msg = myAgent.receive(mt);
             if (msg == null) { //No proposes for this auction
                 if (winner == null) {
                     this.auction.addToLog("On tick " + this.getTickCount() + " we didn't have any replies and no winners, we dont end the auction");
                 } else {
+                    auction.setCurrentPrice(auction.getCurrentPrice()-auction.getIncrement());
                     finishAuction();
                 }
 
@@ -323,17 +329,18 @@ public class BookSellerAgent extends Agent {
             cfp.setLanguage(codec.getName());
             cfp.setOntology(ontology.getName());
 
-            ToOffer ontToOffer = new DefaultToOffer();
-            Offer ontOffer = new DefaultOffer();
-            ontology.Book ontBook = new DefaultBook();
+            ToOffer ontToOffer = new ToOffer();
+            Offer ontOffer = new Offer();
+            ontology.Book ontBook = new ontology.Book();
             ontBook.setTitle(auction.getItem().getTitle());
             ontOffer.setItem(ontBook);
-            ontOffer.setPrice(seller.getAuctionByTitle(auction.getItem().getTitle()).getCurrentPrice());
+            ontOffer.setPrice(seller.getCurrentAuctionByTitle(auction.getItem().getTitle()).getCurrentPrice());
             ontToOffer.setAnOffer(ontOffer);
 
             try {
-                getContentManager().fillContent(cfp, ontToOffer);
-                myAgent.send(cfp);
+                Action action = new Action(myAgent.getAID(),ontToOffer);
+                getContentManager().fillContent(cfp, action);
+
             } catch (Codec.CodecException ce) {
                 ce.printStackTrace();
             } catch (OntologyException oe) {

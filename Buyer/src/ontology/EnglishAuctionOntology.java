@@ -11,7 +11,7 @@ import jade.util.leap.HashMap;
 import nl.uva.psy.swi.beangenerator.ProtegeIntrospector;
 import nl.uva.psy.swi.beangenerator.ProtegeTools;
 import nl.uva.psy.swi.beangenerator.SlotHolder;
-import ontology.impl.*;
+
 
 /**
  * file: EnglishAuctionOntology.java
@@ -77,19 +77,19 @@ public class EnglishAuctionOntology extends jade.content.onto.Ontology implement
 
             // adding Concept(s)
             ConceptSchema buySchema = new ConceptSchema(BUY);
-            add(buySchema, DefaultBuy.class);
+            add(buySchema, Buy.class);
             ConceptSchema bookSchema = new ConceptSchema(BOOK);
-            add(bookSchema, DefaultBook.class);
+            add(bookSchema, Book.class);
             ConceptSchema offerSchema = new ConceptSchema(OFFER);
-            add(offerSchema, DefaultOffer.class);
+            add(offerSchema, Offer.class);
 
             // adding AgentAction(s)
             AgentActionSchema toOfferSchema = new AgentActionSchema(TOOFFER);
-            add(toOfferSchema, DefaultToOffer.class);
+            add(toOfferSchema, ToOffer.class);
             AgentActionSchema toInformSchema = new AgentActionSchema(TOINFORM);
-            add(toInformSchema, DefaultToInform.class);
+            add(toInformSchema, ToInform.class);
             AgentActionSchema toBidSchema = new AgentActionSchema(TOBID);
-            add(toBidSchema, DefaultToBid.class);
+            add(toBidSchema, ToBid.class);
 
             // adding AID(s)
 
@@ -107,14 +107,14 @@ public class EnglishAuctionOntology extends jade.content.onto.Ontology implement
             toBidSchema.add(TOBID_ANOFFER, offerSchema, ObjectSchema.MANDATORY);
 
             // adding name mappings
-            storeSlotName("price", "ontology.impl.DefaultBuy", "price");
-            storeSlotName("item", "ontology.impl.DefaultBuy", "item");
-            storeSlotName("title", "ontology.impl.DefaultBook", "title");
-            storeSlotName("price", "ontology.impl.DefaultOffer", "price");
-            storeSlotName("item", "ontology.impl.DefaultOffer", "item");
-            storeSlotName("anOffer", "ontology.impl.DefaultToOffer", "anOffer");
-            storeSlotName("bill", "ontology.impl.DefaultToInform", "bill");
-            storeSlotName("anOffer", "ontology.impl.DefaultToBid", "anOffer");
+            storeSlotName("price", "ontology.Buy", "price");
+            storeSlotName("item", "ontology.Buy", "item");
+            storeSlotName("title", "ontology.Book", "title");
+            storeSlotName("price", "ontology.Offer", "price");
+            storeSlotName("item", "ontology.Offer", "item");
+            storeSlotName("anOffer", "ontology.ToOffer", "anOffer");
+            storeSlotName("bill", "ontology.ToInform", "bill");
+            storeSlotName("anOffer", "ontology.ToBid", "anOffer");
 
             // adding inheritance
 

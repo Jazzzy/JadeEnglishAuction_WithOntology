@@ -116,7 +116,7 @@ public class Controller {
                     protected void updateItem(Book t, boolean bln) {
                         super.updateItem(t, bln);
                         if (t != null) {
-                            setText(t.getTitle() + "max price: " + t.getMaxPriceToPay());
+                            setText(t.getTitle() + " - max price: " + t.getMaxPriceToPay());
                         }
                     }
                 };
