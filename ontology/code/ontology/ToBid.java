@@ -5,7 +5,7 @@ package ontology;
 /**
 * Protege name: ToBid
 * @author OntologyBeanGenerator v4.1
-* @version 2016/05/9, 00:14:38
+* @version 2016/05/9, 02:34:12
 */
 public interface ToBid extends jade.content.AgentAction {
 

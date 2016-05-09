@@ -10,7 +10,7 @@ import nl.uva.psy.swi.beangenerator.ProtegeTools;
 
 /** file: EnglishAuctionOntology.java
  * @author OntologyBeanGenerator v4.1
- * @version 2016/05/9, 00:14:38
+ * @version 2016/05/9, 02:34:12
  */
 public class EnglishAuctionOntology extends jade.content.onto.Ontology implements ProtegeTools.ProtegeOntology {
    /**
@@ -19,7 +19,7 @@ public class EnglishAuctionOntology extends jade.content.onto.Ontology implement
     */  
    private HashMap jadeToProtege;
 
-  private static final long serialVersionUID = -6366770272942530551L;
+  private static final long serialVersionUID = 3782210241590169965L;
 
   //NAME
   public static final String ONTOLOGY_NAME = "englishAuction";

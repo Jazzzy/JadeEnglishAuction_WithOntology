@@ -5,7 +5,7 @@ package ontology;
 /**
 * Protege name: ToOffer
 * @author OntologyBeanGenerator v4.1
-* @version 2016/05/9, 00:14:38
+* @version 2016/05/9, 02:34:12
 */
 public interface ToOffer extends jade.content.AgentAction {
 

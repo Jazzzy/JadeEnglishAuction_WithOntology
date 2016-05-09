@@ -36,7 +36,7 @@ public class Auction {
         this.ended = ended;
     }
 
-    public void endAuctionSuccess() {//TODO
+    public void endAuctionSuccess() {
         this.setEnded(true);
     }
 

@@ -1,6 +1,12 @@
 package jade;
 
 
+import jade.content.ContentElement;
+import jade.content.lang.Codec;
+import jade.content.lang.leap.LEAPCodec;
+import jade.content.lang.sl.SLCodec;
+import jade.content.onto.Ontology;
+import jade.content.onto.OntologyException;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
@@ -12,6 +18,10 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import model.Book;
 import model.Buyer;
+import ontology.*;
+import ontology.impl.DefaultBook;
+import ontology.impl.DefaultOffer;
+import ontology.impl.DefaultToBid;
 import viewController.BookBuyerGUI;
 import viewController.Controller;
 
@@ -28,6 +38,10 @@ public class BookBuyerAgent extends Agent {
 
     private Buyer buyer;
 
+    private Codec codec = new SLCodec();
+    //private Codec codec = new LEAPCodec();
+    private Ontology ontology = EnglishAuctionOntology.getInstance();
+
     public Buyer getBuyer() {
         return buyer;
     }
@@ -43,6 +57,10 @@ public class BookBuyerAgent extends Agent {
     protected void setup() {
 
         this.buyer = new Buyer();
+
+        getContentManager().registerLanguage(codec);
+        getContentManager().registerOntology(ontology);
+
 
         myGui = new BookBuyerGUI();
         myGui.setBookSellerAgent(this);
@@ -74,18 +92,62 @@ public class BookBuyerAgent extends Agent {
 
         @Override
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP).MatchLanguage(codec.getName()).MatchOntology(ontology.getName());
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 String title = msg.getConversationId();
-                Float price = Float.parseFloat(msg.getContent());
-                Book book = buyer.getBookByName(title);
+
+                ContentElement ce = null;
+
+                Float price = null; //Float.parseFloat(msg.getContent());
+                Book book = null; // = buyer.getBookByName(title);
+
+                try {
+                    ce = getContentManager().extractContent(msg);
+                } catch (Codec.CodecException e) {
+                    e.printStackTrace();
+                } catch (OntologyException e) {
+                    e.printStackTrace();
+                }
+                if (ce instanceof ToOffer) {
+                    ToOffer toOffer = (ToOffer) ce;
+                    price = toOffer.getAnOffer().getPrice();
+                    book = buyer.getBookByName(toOffer.getAnOffer().getItem().getTitle());
+                }
+
+
                 if (book != null) {
                     if (price <= book.getMaxPriceToPay()) {
                         book.addToLog("We have accepted the price for this book: " + price);
                         ACLMessage reply = msg.createReply();
                         reply.setPerformative(ACLMessage.PROPOSE);
-                        reply.setContent(String.valueOf(price));
+
+                        //ONTOLOGY CODE
+                        reply.setLanguage(codec.getName());
+                        reply.setOntology(ontology.getName());
+
+                        ToBid ontToBid = new DefaultToBid();
+                        Offer ontOffer = new DefaultOffer();
+                        ontology.Book ontBook = new DefaultBook();
+                        ontBook.setTitle(book.getTitle());
+                        ontOffer.setItem(ontBook);
+                        ontOffer.setPrice(price);
+                        ontToBid.setAnOffer(ontOffer);
+
+                        try {
+                            getContentManager().fillContent(reply, ontToBid);
+                            myAgent.send(reply);
+                        } catch (Codec.CodecException cep) {
+                            cep.printStackTrace();
+                        } catch (OntologyException oe) {
+                            oe.printStackTrace();
+                        }
+                        //END ONTOLOGY CODE
+
+
+                        //reply.setContent(String.valueOf(price));
+
+
                         myAgent.send(reply);
                     }
                 } else {
@@ -106,14 +168,32 @@ public class BookBuyerAgent extends Agent {
 
         @Override
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST).MatchLanguage(codec.getName()).MatchOntology(ontology.getName());
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 String title = msg.getConversationId();
-                Float price = Float.parseFloat(msg.getContent());
-                Book book = buyer.getBookByName(title);
+
+                ContentElement ce = null;
+
+                Float price = null; //Float.parseFloat(msg.getContent());
+                Book book = null; // = buyer.getBookByName(title);
+
+                try {
+                    ce = getContentManager().extractContent(msg);
+                } catch (Codec.CodecException e) {
+                    e.printStackTrace();
+                } catch (OntologyException e) {
+                    e.printStackTrace();
+                }
+                if (ce instanceof ToInform) {
+                    ToInform toInform = (ToInform) ce;
+                    price = toInform.getBill().getPrice();
+                    book = buyer.getBookByName(toInform.getBill().getItem().getTitle());
+                }
+
+
                 if (book != null) {
-                    Controller.showWebInfo("You have won the book: " + book.getTitle() + "\n" + book.getLog());
+                    Controller.showWebInfo("You have won the book: " + book.getTitle()+" for the price: "+price + "\n" + book.getLog());
                     buyer.removeBookByTitle(book.getTitle());
                 } else {
                     block();

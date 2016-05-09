@@ -24,9 +24,13 @@ package jade;
  *****************************************************************/
 
 
+import jade.content.lang.Codec;
+import jade.content.lang.leap.LEAPCodec;
+import jade.content.lang.sl.SLCodec;
+import jade.content.onto.Ontology;
+import jade.content.onto.OntologyException;
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
@@ -38,6 +42,8 @@ import jade.lang.acl.MessageTemplate;
 import model.Auction;
 import model.Book;
 import model.Seller;
+import ontology.*;
+import ontology.impl.*;
 import viewController.BookSellerGUI;
 import viewController.Controller;
 
@@ -45,7 +51,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 
 
-public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacion book-selling.IDDEAuction
+public class BookSellerAgent extends Agent {
     // The catalogue of books for sale (maps the title of a book to its price)
     private Hashtable catalogue;
     // The GUI by means of which the user can add books in the catalogue
@@ -54,6 +60,11 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
     private Controller controller;
 
     private Seller seller;
+
+    private Codec codec = new SLCodec();
+    //private Codec codec = new LEAPCodec();
+    private Ontology ontology = EnglishAuctionOntology.getInstance();
+
 
     public Seller getSeller() {
         return seller;
@@ -72,6 +83,10 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
         this.seller = new Seller();
 
         catalogue = new Hashtable();
+
+        getContentManager().registerLanguage(codec);
+        getContentManager().registerOntology(ontology);
+
 
         myGui = new BookSellerGUI();
         myGui.setBookSellerAgent(this);
@@ -143,10 +158,36 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
                     myAgent.addBehaviour(new Auctioning(myAgent, seller.getAuctionByTitle(book.getTitle())));
 
 
-                    ArrayList<AID> listOfBuyers =getAllBuyers();
+                    ArrayList<AID> listOfBuyers = getAllBuyers();
                     ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-                    cfp.setContent(String.valueOf( seller.getAuctionByTitle(book.getTitle()).getCurrentPrice()));
+
+                    //ONTOLOGY CODE
+                    cfp.setLanguage(codec.getName());
+                    cfp.setOntology(ontology.getName());
+
+                    ToOffer ontToOffer = new DefaultToOffer();
+                    Offer ontOffer = new DefaultOffer();
+                    ontology.Book ontBook = new DefaultBook();
+                    ontBook.setTitle(book.getTitle());
+                    ontOffer.setItem(ontBook);
+                    ontOffer.setPrice(seller.getAuctionByTitle(book.getTitle()).getCurrentPrice());
+                    ontToOffer.setAnOffer(ontOffer);
+
+                    try {
+                        getContentManager().fillContent(cfp, ontToOffer);
+                        myAgent.send(cfp);
+                    } catch (Codec.CodecException ce) {
+                        ce.printStackTrace();
+                    } catch (OntologyException oe) {
+                        oe.printStackTrace();
+                    }
+                    //END ONTOLOGY CODE
+
+                    //This should be an ontology now
+                    //cfp.setContent(String.valueOf( seller.getAuctionByTitle(book.getTitle()).getCurrentPrice()));
+
                     cfp.setConversationId(seller.getAuctionByTitle(book.getTitle()).getItem().getTitle());
+
                     for (AID aid : listOfBuyers) {
                         cfp.addReceiver(aid);
                     }
@@ -193,7 +234,31 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
             ACLMessage informWin = new ACLMessage(ACLMessage.REQUEST);
             informWin.addReceiver(this.winner);
             informWin.setConversationId(auction.getItem().getTitle());
-            informWin.setContent(String.valueOf(auction.getCurrentPrice()-auction.getIncrement()));
+
+            //ONTOLOGY CODE
+            informWin.setLanguage(codec.getName());
+            informWin.setOntology(ontology.getName());
+
+            ToInform ontToInform = new DefaultToInform();
+            Buy ontBuy = new DefaultBuy();
+            ontology.Book ontBook = new DefaultBook();
+
+            ontBook.setTitle(auction.getItem().getTitle());
+            ontBuy.setItem(ontBook);
+            ontBuy.setPrice((auction.getCurrentPrice() - auction.getIncrement()));
+            ontToInform.setBill(ontBuy);
+
+            try {
+                getContentManager().fillContent(informWin, ontToInform);
+                myAgent.send(informWin);
+            } catch (Codec.CodecException ce) {
+                ce.printStackTrace();
+            } catch (OntologyException oe) {
+                oe.printStackTrace();
+            }
+            //END ONTOLOGY CODE
+
+            //informWin.setContent(String.valueOf(auction.getCurrentPrice() - auction.getIncrement()));
             myAgent.send(informWin);
 
             this.auction.addToLog("On tick " + this.getTickCount() + " we have finished the auction with [" + this.winner.getLocalName() + "] as a winner and he paid " + (auction.getCurrentPrice() - auction.getIncrement()));
@@ -208,24 +273,24 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
 
         public void onTick() {
 
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPOSE).MatchConversationId(auction.getItem().getTitle()).MatchContent(String.valueOf(auction.getCurrentPrice()));
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPOSE).MatchConversationId(auction.getItem().getTitle());
 
             ACLMessage msg = myAgent.receive(mt);
             if (msg == null) { //No proposes for this auction
-                if(winner==null){
+                if (winner == null) {
                     this.auction.addToLog("On tick " + this.getTickCount() + " we didn't have any replies and no winners, we dont end the auction");
-                }else {
-                        finishAuction();
+                } else {
+                    finishAuction();
                 }
 
             } else {
 
                 this.winner = msg.getSender();//We pick the first and take it as the current winner
 
-                ACLMessage reply = msg.createReply();
-                reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-                reply.setContent(String.valueOf(auction.getCurrentPrice()));
-                myAgent.send(reply); //We tell him he is the current winner
+//                ACLMessage reply = msg.createReply();
+//                reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+//                reply.setContent(String.valueOf(auction.getCurrentPrice()));
+//                myAgent.send(reply); //We tell him he is the current winner
 
                 this.auction.addToLog("On tick " + this.getTickCount() + " we have selected [" + this.winner.getLocalName() + "] as the current winner since he sent the first proposal");
 
@@ -238,24 +303,44 @@ public class BookSellerAgent extends Agent { //TODO:  Meter no id de conversacio
                     }
                 } else {
                     while (msg != null) { //And responding telling them that they are not in the first place
-                        reply = msg.createReply();
-                        reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-                        reply.setContent(String.valueOf(auction.getCurrentPrice()));
-                        myAgent.send(reply);
+//                        reply = msg.createReply();
+//                        reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+//                        reply.setContent(String.valueOf(auction.getCurrentPrice()));
+//                        myAgent.send(reply);
                         this.auction.addToLog("On tick " + this.getTickCount() + " we have received a proposal from [" + msg.getSender().getLocalName() + "] but it was not the first one");
                         msg = myAgent.receive(mt);
                     }
 
                 }
-
                 this.auction.makeIncrement();
-
             }
 
             //Now we send the next cfp to all the current buyers
-            ArrayList<AID> listOfBuyers =getAllBuyers();
+            ArrayList<AID> listOfBuyers = getAllBuyers();
             ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-            cfp.setContent(String.valueOf(auction.getCurrentPrice()));
+
+            //ONTOLOGY CODE
+            cfp.setLanguage(codec.getName());
+            cfp.setOntology(ontology.getName());
+
+            ToOffer ontToOffer = new DefaultToOffer();
+            Offer ontOffer = new DefaultOffer();
+            ontology.Book ontBook = new DefaultBook();
+            ontBook.setTitle(auction.getItem().getTitle());
+            ontOffer.setItem(ontBook);
+            ontOffer.setPrice(seller.getAuctionByTitle(auction.getItem().getTitle()).getCurrentPrice());
+            ontToOffer.setAnOffer(ontOffer);
+
+            try {
+                getContentManager().fillContent(cfp, ontToOffer);
+                myAgent.send(cfp);
+            } catch (Codec.CodecException ce) {
+                ce.printStackTrace();
+            } catch (OntologyException oe) {
+                oe.printStackTrace();
+            }
+            //END ONTOLOGY CODE
+
             cfp.setConversationId(auction.getItem().getTitle());
             for (AID aid : listOfBuyers) {
                 cfp.addReceiver(aid);
